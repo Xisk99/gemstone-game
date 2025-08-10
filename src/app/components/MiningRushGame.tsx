@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import { track } from '@vercel/analytics';
 
 interface GameObject {
   id: number;
@@ -160,8 +161,16 @@ const MiningRushGame: React.FC = () => {
 
   // Compartir imagen en Twitter
   const shareScoreImage = async () => {
+    // Track social share event
+    track('social_share', {
+      platform: 'twitter',
+      score: gameState.score,
+      timestamp: new Date().toISOString(),
+    });
+
     const currentUrl = window.location.href;
     const text = `Just mined ${gameState.score} gems in Gemstone Mining Rush! 💎⛏️
+
 🎮 Play here: ${currentUrl}
 
 🚀 Buy $GEM token: sxv1symoD4WXjpeXCs5USFEyt8hBhmCuuptLjA8uRNy
@@ -278,6 +287,13 @@ Follow and support @GemstoneReward for updates! ✨
   const copyImageToClipboard = async () => {
     if (!shareImageUrl) return;
     
+    // Track image copy event
+    track('image_action', {
+      action: 'copy',
+      score: gameState.score,
+      timestamp: new Date().toISOString(),
+    });
+    
     // Detectar dispositivo
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isAndroid = /Android/.test(navigator.userAgent);
@@ -340,6 +356,13 @@ Follow and support @GemstoneReward for updates! ✨
   // Descargar imagen
   const downloadScoreImage = () => {
     if (!shareImageUrl) return;
+    
+    // Track image download event
+    track('image_action', {
+      action: 'download',
+      score: gameState.score,
+      timestamp: new Date().toISOString(),
+    });
     
     // Detectar dispositivo
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -515,10 +538,21 @@ Follow and support @GemstoneReward for updates! ✨
         } else if (collision.type === 'rock') {
           setGameState(prev => {
             const newLives = Math.max(0, prev.lives - 1);
+            const isGameOver = newLives === 0;
+            
+            // Track game over event
+            if (isGameOver) {
+              track('game_over', {
+                final_score: prev.score,
+                lives_lost: prev.lives,
+                timestamp: new Date().toISOString(),
+              });
+            }
+            
             return {
               ...prev,
               lives: newLives,
-              gameOver: newLives === 0,
+              gameOver: isGameOver,
               isPlaying: newLives > 0,
             };
           });
@@ -538,6 +572,11 @@ Follow and support @GemstoneReward for updates! ✨
 
   // Iniciar/reiniciar juego
   const startGame = () => {
+    // Track game start event
+    track('game_start', {
+      timestamp: new Date().toISOString(),
+    });
+
     setGameState({
       score: 0,
       lives: 3,
@@ -629,7 +668,12 @@ Follow and support @GemstoneReward for updates! ✨
             Lives: <span className="font-bold text-red-300">{"❤️".repeat(Math.max(0, gameState.lives))}</span>
           </div>
           <button
-            onClick={() => setGameState(prev => ({ ...prev, showHowToPlay: true }))}
+            onClick={() => {
+              track('how_to_play_opened', {
+                timestamp: new Date().toISOString(),
+              });
+              setGameState(prev => ({ ...prev, showHowToPlay: true }));
+            }}
             className="bg-purple-600 hover:bg-purple-700 text-white w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-colors text-xs sm:text-sm font-semibold"
           >
             ?
