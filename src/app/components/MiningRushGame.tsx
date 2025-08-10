@@ -743,7 +743,8 @@ Follow and support @GemstoneReward for updates! ✨
         
         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
           <div className="text-white text-xs sm:text-sm text-center">
-            Use ← → arrows or A/D keys to move • SPACE to pause
+            <span className="block sm:hidden">Tap screen to move • SPACE to pause</span>
+            <span className="hidden sm:block">Use ← → arrows or A/D keys to move • SPACE to pause</span>
           </div>
           
           <div className="text-gray-400 text-xs">
@@ -769,9 +770,9 @@ Follow and support @GemstoneReward for updates! ✨
               <p>🎮 <strong>Objective:</strong> Collect gems while avoiding rocks!</p>
               <p>⛏️ <strong>Controls:</strong></p>
               <ul className="ml-4 space-y-1">
-                <li>• Use ← → arrow keys or A/D to move</li>
+                <li className="block sm:hidden">• Tap on screen where you want to move</li>
+                <li className="hidden sm:block">• Use ← → arrow keys or A/D to move</li>
                 <li>• SPACE to pause/resume</li>
-                <li>• Touch/drag on mobile</li>
               </ul>
               <p>💎 <strong>Scoring:</strong> Each gem = 1 point</p>
               <p>❤️ <strong>Lives:</strong> Start with 3 lives, lose 1 when hitting rocks</p>
