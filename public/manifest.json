@@ -1,0 +1,28 @@
+{
+  "name": "Gemstone Reward Mining Rush",
+  "short_name": "Gem Mining",
+  "description": "Mine precious gems and earn rewards in this thrilling arcade game!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/game/gem_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/game/gem_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "arcade", "entertainment"],
+  "lang": "en",
+  "scope": "/",
+  "prefer_related_applications": false
+} 
