@@ -26,10 +26,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/game/gem_logo.png",
-        width: 800,
-        height: 600,
-        alt: "Gemstone Mining Rush Game",
+        url: "/banner.jpeg",
+        width: 1200,
+        height: 630,
+        alt: "Gemstone Mining Rush Game Banner",
       },
     ],
   },
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Gemstone Reward Mining Rush",
     description: "Mine precious gems and earn rewards! Thrilling arcade gaming experience.",
-    images: ["/game/gem_logo.png"],
+    images: ["/banner.jpeg"],
     creator: "@xisk_99",
   },
   icons: {
