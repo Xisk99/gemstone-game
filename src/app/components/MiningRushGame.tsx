@@ -35,6 +35,7 @@ const MiningRushGame: React.FC = () => {
   const [playerVelocity, setPlayerVelocity] = useState(0); // Velocidad actual del jugador
   const [gameObjects, setGameObjects] = useState<GameObject[]>([]);
   const [keys, setKeys] = useState<{ [key: string]: boolean }>({});
+  const [touchTarget, setTouchTarget] = useState<number | null>(null); // Posición objetivo del toque
   const [shareImageUrl, setShareImageUrl] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; show: boolean }>({ message: '', show: false });
   
@@ -436,13 +437,27 @@ Follow and support @GemstoneReward for updates! ✨
       setPlayerVelocity(prevVelocity => {
         let newVelocity = prevVelocity;
         
-        // Aplicar aceleración basada en las teclas presionadas
+        // Aplicar aceleración basada en las teclas presionadas o objetivo táctil
         if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
           newVelocity -= ACCELERATION;
           setPlayerDirection('left');
+          setTouchTarget(null); // Limpiar objetivo al usar teclado
         } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
           newVelocity += ACCELERATION;
           setPlayerDirection('right');
+          setTouchTarget(null); // Limpiar objetivo al usar teclado
+        } else if (touchTarget !== null) {
+          // Movimiento hacia objetivo táctil
+          const diff = touchTarget - playerX;
+          if (Math.abs(diff) > 0.5) { // Umbral para llegar al objetivo
+            const targetVelocity = Math.sign(diff) * MAX_PLAYER_SPEED * 0.8;
+            newVelocity = targetVelocity;
+            setPlayerDirection(diff < 0 ? 'left' : 'right');
+          } else {
+            // Llegamos al objetivo
+            setTouchTarget(null);
+            newVelocity *= FRICTION;
+          }
         } else {
           // Aplicar fricción cuando no hay input
           newVelocity *= FRICTION;
@@ -478,7 +493,7 @@ Follow and support @GemstoneReward for updates! ✨
         cancelAnimationFrame(animationId);
       }
     };
-  }, [keys, gameState.isPlaying, gameState.isPaused, playerVelocity]);
+  }, [keys, gameState.isPlaying, gameState.isPaused, playerVelocity, touchTarget]);
 
   // Spawn de objetos
   const spawnObject = useCallback(() => {
@@ -636,7 +651,7 @@ Follow and support @GemstoneReward for updates! ✨
     };
   }, [gameState.isPlaying, gameState.isPaused, spawnObject, spawnLife]); // Ahora incluimos las funciones optimizadas
 
-  // Manejo táctil para móviles optimizado
+  // Manejo táctil para móviles altamente responsivo con tap instantáneo
   const handleTouch = useCallback((e: React.TouchEvent) => {
     if (!gameState.isPlaying || gameState.isPaused) return;
     
@@ -651,7 +666,7 @@ Follow and support @GemstoneReward for updates! ✨
       // Calcular la diferencia para determinar dirección y velocidad deseada
       const diff = targetX - playerX;
       
-      if (Math.abs(diff) > 1) { // Solo mover si la diferencia es significativa
+      if (Math.abs(diff) > 0.3) { // Umbral más bajo para mayor sensibilidad
         // Determinar dirección
         if (diff < 0) {
           setPlayerDirection('left');
@@ -659,12 +674,40 @@ Follow and support @GemstoneReward for updates! ✨
           setPlayerDirection('right');
         }
         
-        // Ajustar velocidad basada en la distancia - más responsivo
-        const desiredVelocity = Math.sign(diff) * Math.min(MAX_PLAYER_SPEED, Math.abs(diff) * 0.15);
+        // Sistema de velocidad más agresivo para móvil con objetivo persistente
+        const distance = Math.abs(diff);
+        let velocityMultiplier;
+        
+        if (distance > 25) {
+          // Movimiento muy largo: velocidad máxima instantánea
+          velocityMultiplier = 1.2; // 120% de velocidad máxima
+        } else if (distance > 15) {
+          // Movimiento largo: velocidad máxima inmediata
+          velocityMultiplier = 1.0;
+        } else if (distance > 8) {
+          // Movimiento medio: velocidad alta
+          velocityMultiplier = 0.85;
+        } else if (distance > 3) {
+          // Movimiento corto: velocidad moderada-alta
+          velocityMultiplier = 0.7;
+        } else {
+          // Movimiento muy corto: velocidad moderada
+          velocityMultiplier = 0.5;
+        }
+        
+        const desiredVelocity = Math.sign(diff) * Math.min(MAX_PLAYER_SPEED * 1.2, MAX_PLAYER_SPEED * velocityMultiplier);
         setPlayerVelocity(desiredVelocity);
+        
+        // Establecer objetivo para movimiento continuo
+        setTouchTarget(targetX);
       }
     }
   }, [gameState.isPlaying, gameState.isPaused, playerX]);
+
+  // Manejar fin del toque para limpiar objetivo
+  const handleTouchEnd = useCallback(() => {
+    setTouchTarget(null); // Limpiar objetivo al levantar el dedo
+  }, []);
 
   return (
     <div className="w-full flex flex-col bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 overflow-hidden fixed inset-0" style={{ height: '100dvh' }}>
@@ -702,6 +745,7 @@ Follow and support @GemstoneReward for updates! ✨
         className="flex-1 relative bg-gradient-to-b from-slate-300/40 to-slate-400/50 overflow-hidden border-y border-purple-500/30 min-h-0"
         onTouchMove={handleTouch}
         onTouchStart={handleTouch}
+        onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'none' }}
       >
         {/* Game Objects */}
