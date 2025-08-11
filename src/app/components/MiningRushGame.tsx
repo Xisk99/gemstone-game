@@ -713,12 +713,30 @@ Follow and support @GemstoneReward for updates! ✨
     <div className="w-full flex flex-col bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 overflow-hidden fixed inset-0" style={{ height: '100dvh' }}>
       {/* Header */}
       <div className="flex justify-between items-center p-2 sm:p-4 bg-black/20 flex-shrink-0">
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Left section */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-1">
           <Image src="/game/gem_logo.png" alt="Gem Logo" width={32} height={32} className="sm:w-10 sm:h-10" />
           <h1 className="text-white text-sm sm:text-xl font-bold tracking-tight">Gemstone Mining Rush</h1>
         </div>
         
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Center section - Buy GEM Button */}
+        <div className="flex-shrink-0 cursor-pointer">
+          <button
+            onClick={() => {
+              track('buy_gem_clicked', {
+                timestamp: new Date().toISOString(),
+                source: 'header_button'
+              });
+              window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
+            }}
+            className="bg-gradient-to-r cursor-pointer from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
+          >
+            💎 Buy $GEM
+          </button>
+        </div>
+        
+        {/* Right section */}
+        <div className="flex items-center gap-2 sm:gap-4 justify-end flex-1">
           <div className="text-white text-xs sm:text-sm font-medium">
             Score: <span className="font-bold text-purple-300">{gameState.score}</span>
           </div>
