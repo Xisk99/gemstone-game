@@ -21,13 +21,16 @@ export const metadata: Metadata = {
   creator: "Xisk99",
   publisher: "Gemstone Rewards",
   robots: "index, follow",
+  metadataBase: new URL('https://gemstone-mining-rush.vercel.app'),
   openGraph: {
     title: "Gemstone Reward Mining Rush",
     description: "Mine precious gems and earn rewards! Thrilling arcade gaming experience with $GEM token rewards.",
     type: "website",
+    url: "https://gemstone-mining-rush.vercel.app",
+    siteName: "Gemstone Mining Rush",
     images: [
       {
-        url: "/banner.jpeg",
+        url: "https://gemstone-mining-rush.vercel.app/banner.jpeg",
         width: 1200,
         height: 630,
         alt: "Gemstone Mining Rush Game Banner",
@@ -38,8 +41,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Gemstone Reward Mining Rush",
     description: "Mine precious gems and earn rewards! Thrilling arcade gaming experience.",
-    images: ["/banner.jpeg"],
+    images: ["https://gemstone-mining-rush.vercel.app/banner.jpeg"],
     creator: "@xisk_99",
+    site: "@GemstoneReward",
   },
   icons: {
     icon: "/game/gem_logo.png",
