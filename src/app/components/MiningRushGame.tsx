@@ -36,6 +36,7 @@ const MiningRushGame: React.FC = () => {
   const [gameObjects, setGameObjects] = useState<GameObject[]>([]);
   const [keys, setKeys] = useState<{ [key: string]: boolean }>({});
   const [touchTarget, setTouchTarget] = useState<number | null>(null); // Posición objetivo del toque
+  const [mobileControls, setMobileControls] = useState<{ left: boolean; right: boolean }>({ left: false, right: false }); // Controles móviles
   const [shareImageUrl, setShareImageUrl] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; show: boolean }>({ message: '', show: false });
   
@@ -47,6 +48,12 @@ const MiningRushGame: React.FC = () => {
   const gameStateRef = useRef(gameState);
   const processedCollisionsRef = useRef<Set<number>>(new Set()); // Track processed collisions
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Detectar si es dispositivo móvil
+  const isMobile = typeof window !== 'undefined' && (
+    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth < 768
+  );
 
   // Función para mostrar toast
   const showToast = (message: string) => {
@@ -61,12 +68,15 @@ const MiningRushGame: React.FC = () => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
-  // Limpiar colisiones procesadas cuando inicia un nuevo juego
+  // Limpiar colisiones procesadas y controles móviles cuando inicia un nuevo juego
   useEffect(() => {
     if (gameState.isPlaying && !gameState.isPaused) {
       processedCollisionsRef.current.clear();
+    } else {
+      // Limpiar controles móviles cuando no está jugando o está pausado
+      setMobileControls({ left: false, right: false });
     }
-  }, [gameState.isPlaying]);
+  }, [gameState.isPlaying, gameState.isPaused]);
 
   // Generar imagen épica de puntaje
   const generateScoreImage = useCallback(async () => {
@@ -437,17 +447,17 @@ Follow and support @GemstoneReward for updates! ✨
       setPlayerVelocity(prevVelocity => {
         let newVelocity = prevVelocity;
         
-        // Aplicar aceleración basada en las teclas presionadas o objetivo táctil
-        if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+        // Aplicar aceleración basada en las teclas presionadas, controles móviles o objetivo táctil
+        if (keys['ArrowLeft'] || keys['a'] || keys['A'] || mobileControls.left) {
           newVelocity -= ACCELERATION;
           setPlayerDirection('left');
-          setTouchTarget(null); // Limpiar objetivo al usar teclado
-        } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+          setTouchTarget(null); // Limpiar objetivo al usar controles
+        } else if (keys['ArrowRight'] || keys['d'] || keys['D'] || mobileControls.right) {
           newVelocity += ACCELERATION;
           setPlayerDirection('right');
-          setTouchTarget(null); // Limpiar objetivo al usar teclado
-        } else if (touchTarget !== null) {
-          // Movimiento hacia objetivo táctil
+          setTouchTarget(null); // Limpiar objetivo al usar controles
+        } else if (!isMobile && touchTarget !== null) {
+          // Movimiento hacia objetivo táctil (solo desktop)
           const diff = touchTarget - playerX;
           if (Math.abs(diff) > 0.5) { // Umbral para llegar al objetivo
             const targetVelocity = Math.sign(diff) * MAX_PLAYER_SPEED * 0.8;
@@ -493,7 +503,7 @@ Follow and support @GemstoneReward for updates! ✨
         cancelAnimationFrame(animationId);
       }
     };
-  }, [keys, gameState.isPlaying, gameState.isPaused, playerVelocity, touchTarget]);
+  }, [keys, gameState.isPlaying, gameState.isPaused, playerVelocity, touchTarget, mobileControls, isMobile]);
 
   // Spawn de objetos
   const spawnObject = useCallback(() => {
@@ -617,6 +627,8 @@ Follow and support @GemstoneReward for updates! ✨
     setPlayerDirection('right');
     setPlayerVelocity(0); // Resetear velocidad
     setGameObjects([]);
+    setMobileControls({ left: false, right: false }); // Limpiar controles móviles
+    setTouchTarget(null); // Limpiar objetivo táctil
     objectIdRef.current = 0;
     processedCollisionsRef.current.clear(); // Limpiar colisiones procesadas
   };
@@ -709,6 +721,16 @@ Follow and support @GemstoneReward for updates! ✨
     setTouchTarget(null); // Limpiar objetivo al levantar el dedo
   }, []);
 
+  // Manejo de controles móviles
+  const handleMobileButtonStart = useCallback((direction: 'left' | 'right') => {
+    if (!gameState.isPlaying || gameState.isPaused) return;
+    setMobileControls(prev => ({ ...prev, [direction]: true }));
+  }, [gameState.isPlaying, gameState.isPaused]);
+
+  const handleMobileButtonEnd = useCallback((direction: 'left' | 'right') => {
+    setMobileControls(prev => ({ ...prev, [direction]: false }));
+  }, []);
+
   return (
     <div className="w-full flex flex-col bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 overflow-hidden fixed inset-0" style={{ height: '100dvh' }}>
       {/* Header */}
@@ -761,10 +783,10 @@ Follow and support @GemstoneReward for updates! ✨
       <div 
         ref={gameAreaRef}
         className="flex-1 relative bg-gradient-to-b from-slate-300/40 to-slate-400/50 overflow-hidden border-y border-purple-500/30 min-h-0"
-        onTouchMove={handleTouch}
-        onTouchStart={handleTouch}
-        onTouchEnd={handleTouchEnd}
-        style={{ touchAction: 'none' }}
+        onTouchMove={!isMobile ? handleTouch : undefined}
+        onTouchStart={!isMobile ? handleTouch : undefined}
+        onTouchEnd={!isMobile ? handleTouchEnd : undefined}
+        style={{ touchAction: isMobile ? 'pan-y' : 'none' }}
       >
         {/* Game Objects */}
         {gameObjects.map(obj => (
@@ -840,6 +862,59 @@ Follow and support @GemstoneReward for updates! ✨
             </div>
           </div>
         )}
+
+        {/* Mobile Control Buttons */}
+        {isMobile && (
+          <>
+            {/* Left Button */}
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleMobileButtonStart('left');
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleMobileButtonEnd('left');
+              }}
+              onTouchCancel={(e) => {
+                e.preventDefault();
+                handleMobileButtonEnd('left');
+              }}
+              className={`absolute bottom-6 left-6 w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold transition-all duration-150 shadow-lg border-2 select-none ${
+                mobileControls.left 
+                  ? 'bg-purple-600 border-purple-400 scale-110 shadow-purple-500/50' 
+                  : 'bg-purple-700/80 border-purple-500/50 hover:bg-purple-600/90'
+              }`}
+              style={{ touchAction: 'manipulation' }}
+            >
+              ←
+            </button>
+
+            {/* Right Button */}
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleMobileButtonStart('right');
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleMobileButtonEnd('right');
+              }}
+              onTouchCancel={(e) => {
+                e.preventDefault();
+                handleMobileButtonEnd('right');
+              }}
+              className={`absolute bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold transition-all duration-150 shadow-lg border-2 select-none ${
+                mobileControls.right 
+                  ? 'bg-purple-600 border-purple-400 scale-110 shadow-purple-500/50' 
+                  : 'bg-purple-700/80 border-purple-500/50 hover:bg-purple-600/90'
+              }`}
+              style={{ touchAction: 'manipulation' }}
+            >
+              →
+            </button>
+          </>
+        )}
       </div>
 
       {/* Controls */}
@@ -866,8 +941,14 @@ Follow and support @GemstoneReward for updates! ✨
         
         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
           <div className="text-white text-xs sm:text-sm text-center">
-            <span className="block sm:hidden">Tap screen to move • SPACE to pause</span>
-            <span className="hidden sm:block">Use ← → arrows or A/D keys to move • SPACE to pause</span>
+            {isMobile ? (
+              <span>Use floating arrow buttons to move • SPACE to pause</span>
+            ) : (
+              <>
+                <span className="block sm:hidden">Tap screen to move • SPACE to pause</span>
+                <span className="hidden sm:block">Use ← → arrows or A/D keys to move • SPACE to pause</span>
+              </>
+            )}
           </div>
           
           <div className="text-gray-400 text-xs">
@@ -893,8 +974,14 @@ Follow and support @GemstoneReward for updates! ✨
               <p>🎮 <strong>Objective:</strong> Collect gems while avoiding rocks!</p>
               <p>⛏️ <strong>Controls:</strong></p>
               <ul className="ml-4 space-y-1">
-                <li className="block sm:hidden">• Tap on screen where you want to move</li>
-                <li className="hidden sm:block">• Use ← → arrow keys or A/D to move</li>
+                {isMobile ? (
+                  <li>• Tap and hold the floating arrow buttons to move</li>
+                ) : (
+                  <>
+                    <li className="block sm:hidden">• Tap on screen where you want to move</li>
+                    <li className="hidden sm:block">• Use ← → arrow keys or A/D to move</li>
+                  </>
+                )}
                 <li>• SPACE to pause/resume</li>
               </ul>
               <p>💎 <strong>Scoring:</strong> Each gem = 1 point</p>
