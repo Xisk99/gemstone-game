@@ -392,9 +392,9 @@ Follow and support @GemstoneReward for updates! ✨
   const GAME_SPEED = 0.5;
   const SPAWN_RATE = 500; // ms between spawns (reduced from 1500 to 800)
   const LIFE_SPAWN_RATE = 15000; // ms between life spawns (every 15 seconds)
-  const MAX_PLAYER_SPEED = 2.5; // Maximum speed
-  const ACCELERATION = 0.1; // Acceleration
-  const FRICTION = 0.85; // Friction for deceleration
+  const MAX_PLAYER_SPEED = 1.5; // Maximum speed
+  const ACCELERATION = 0.025; // Acceleration
+  const FRICTION = 0.25; // Friction for deceleration
 
   // Pausar/reanudar
   const togglePause = useCallback(() => {
