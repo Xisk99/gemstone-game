@@ -426,9 +426,11 @@ Follow and support @GemstoneReward for updates! ✨
     };
   }, [togglePause]);
 
-  // Movimiento del jugador
+  // Movimiento del jugador optimizado con requestAnimationFrame
   useEffect(() => {
     if (!gameState.isPlaying || gameState.isPaused) return;
+
+    let animationId: number;
 
     const movePlayer = () => {
       setPlayerVelocity(prevVelocity => {
@@ -462,10 +464,20 @@ Follow and support @GemstoneReward for updates! ✨
         const newX = prev + playerVelocity;
         return Math.max(0, Math.min(100, newX));
       });
+
+      // Continuar el loop de animación
+      if (gameStateRef.current.isPlaying && !gameStateRef.current.isPaused) {
+        animationId = requestAnimationFrame(movePlayer);
+      }
     };
 
-    const interval = setInterval(movePlayer, 16); // 60fps para movimiento suave
-    return () => clearInterval(interval);
+    animationId = requestAnimationFrame(movePlayer);
+    
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
   }, [keys, gameState.isPlaying, gameState.isPaused, playerVelocity]);
 
   // Spawn de objetos
@@ -502,9 +514,10 @@ Follow and support @GemstoneReward for updates! ✨
     setGameObjects(prev => [...prev, newLife]);
   }, []); // Sin dependencias para evitar recreación
 
-  // Loop principal del juego
+  // Loop principal del juego optimizado
   const gameLoop = useCallback(() => {
-    if (!gameState.isPlaying || gameState.isPaused) return;
+    const currentGameState = gameStateRef.current;
+    if (!currentGameState.isPlaying || currentGameState.isPaused) return;
 
     setGameObjects(prev => {
       const updatedObjects = prev
@@ -623,15 +636,17 @@ Follow and support @GemstoneReward for updates! ✨
     };
   }, [gameState.isPlaying, gameState.isPaused, spawnObject, spawnLife]); // Ahora incluimos las funciones optimizadas
 
-  // Manejo táctil para móviles
-  const handleTouch = (e: React.TouchEvent) => {
+  // Manejo táctil para móviles optimizado
+  const handleTouch = useCallback((e: React.TouchEvent) => {
     if (!gameState.isPlaying || gameState.isPaused) return;
+    
+    e.preventDefault(); // Prevenir scroll y otros comportamientos por defecto
     
     const touch = e.touches[0];
     const rect = gameAreaRef.current?.getBoundingClientRect();
     if (rect) {
       const touchX = ((touch.clientX - rect.left) / rect.width) * 100;
-      const targetX = Math.max(0, Math.min(100, touchX - 4)); // Centrar el jugador
+      const targetX = Math.max(0, Math.min(100, touchX - 5)); // Centrar el jugador
       
       // Calcular la diferencia para determinar dirección y velocidad deseada
       const diff = targetX - playerX;
@@ -644,12 +659,12 @@ Follow and support @GemstoneReward for updates! ✨
           setPlayerDirection('right');
         }
         
-        // Ajustar velocidad basada en la distancia
-        const desiredVelocity = Math.sign(diff) * Math.min(MAX_PLAYER_SPEED, Math.abs(diff) * 0.2);
+        // Ajustar velocidad basada en la distancia - más responsivo
+        const desiredVelocity = Math.sign(diff) * Math.min(MAX_PLAYER_SPEED, Math.abs(diff) * 0.15);
         setPlayerVelocity(desiredVelocity);
       }
     }
-  };
+  }, [gameState.isPlaying, gameState.isPaused, playerX]);
 
   return (
     <div className="w-full flex flex-col bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 overflow-hidden fixed inset-0" style={{ height: '100dvh' }}>
@@ -699,7 +714,8 @@ Follow and support @GemstoneReward for updates! ✨
               top: `${obj.y}%`,
               width: obj.type === 'rock' ? '5%' : '6%', // Rocas más pequeñas
               height: obj.type === 'rock' ? '5%' : '6%', // Rocas más pequeñas
-              transform: 'translate(-50%, -50%)',
+              transform: 'translate3d(-50%, -50%, 0)',
+              willChange: 'transform',
             }}
           >
             {obj.type === 'gem' && (
@@ -730,12 +746,13 @@ Follow and support @GemstoneReward for updates! ✨
 
         {/* Player */}
         <div
-          className="absolute bottom-4 transition-all duration-100 ease-out drop-shadow-lg"
+          className="absolute bottom-4 drop-shadow-lg"
           style={{
             left: `${playerX}%`,
             width: '10%', // Aumentado de 8% a 10%
             height: '10%', // Aumentado de 8% a 10%
-            transform: 'translateX(-50%)',
+            transform: 'translate3d(-50%, 0, 0)',
+            willChange: 'transform',
           }}
         >
           <Image 
