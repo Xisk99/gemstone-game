@@ -850,24 +850,38 @@ Follow and support @GemstoneReward for updates! ✨
         {isMobile ? (
           // Mobile: 2-row layout
           <div className="p-2 space-y-2">
-            {/* First Row: Logo + Title + Buy Button */}
+            {/* First Row: Logo + Title + Buy Buttons */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 flex-1">
                 <Image src="/game/gem_logo.png" alt="Gem Logo" width={28} height={28} />
                 <h1 className="text-white text-sm font-bold tracking-tight">Gemstone Mining Rush</h1>
               </div>
-              <button
-                onClick={() => {
-                  track('buy_gem_clicked', {
-                    timestamp: new Date().toISOString(),
-                    source: 'header_button'
-                  });
-                  window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
-                }}
-                className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-2 py-1 rounded-lg font-bold text-xs transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
-              >
-                💎 Buy $GEM
-              </button>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    track('buy_gem_clicked', {
+                      timestamp: new Date().toISOString(),
+                      source: 'header_button'
+                    });
+                    window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
+                  }}
+                  className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-2 py-1 rounded-lg font-bold text-xs transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
+                >
+                  💎 $GEM
+                </button>
+                <button
+                  onClick={() => {
+                    track('buy_gemtard_clicked', {
+                      timestamp: new Date().toISOString(),
+                      source: 'header_button'
+                    });
+                    window.open('https://magiceden.io/marketplace/gemtards', '_blank');
+                  }}
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-2 py-1 rounded-lg font-bold text-xs transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-purple-400"
+                >
+                  🎨 NFTs
+                </button>
+              </div>
             </div>
             
             {/* Second Row: Score + Lives + Action Buttons */}
@@ -917,20 +931,34 @@ Follow and support @GemstoneReward for updates! ✨
               <h1 className="text-white text-xl font-bold tracking-tight">Gemstone Mining Rush</h1>
             </div>
             
-            {/* Center section - Buy GEM Button */}
+            {/* Center section - Buy Buttons */}
             <div className="flex-shrink-0 cursor-pointer">
-              <button
-                onClick={() => {
-                  track('buy_gem_clicked', {
-                    timestamp: new Date().toISOString(),
-                    source: 'header_button'
-                  });
-                  window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
-                }}
-                className="bg-gradient-to-r cursor-pointer from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
-              >
-                💎 Buy $GEM
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    track('buy_gem_clicked', {
+                      timestamp: new Date().toISOString(),
+                      source: 'header_button'
+                    });
+                    window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
+                  }}
+                  className="bg-gradient-to-r cursor-pointer from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-3 py-2 rounded-lg font-bold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
+                >
+                  💎 Buy $GEM
+                </button>
+                <button
+                  onClick={() => {
+                    track('buy_gemtard_clicked', {
+                      timestamp: new Date().toISOString(),
+                      source: 'header_button'
+                    });
+                    window.open('https://magiceden.io/marketplace/gemtards', '_blank');
+                  }}
+                  className="bg-gradient-to-r cursor-pointer from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-3 py-2 rounded-lg font-bold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-purple-400"
+                >
+                  🎨 Buy GEMtards
+                </button>
+              </div>
             </div>
             
             {/* Right section */}
@@ -1222,11 +1250,32 @@ Follow and support @GemstoneReward for updates! ✨
                 </button>
               </div>
               
+                          <div className="space-y-3">
               <div className="bg-purple-600/20 border border-purple-400/50 rounded-lg p-3">
                 <div className="text-gray-200 text-sm">
                   Currently selected: <span className="text-purple-200 font-bold text-base">{selectedCharacter.name}</span>
                 </div>
               </div>
+              
+              {/* Buy GEMtards CTA */}
+              <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-400/30 rounded-lg p-3 text-center">
+                <div className="text-purple-200 text-sm font-medium mb-2">
+                  💎 Want more unique characters?
+                </div>
+                <button
+                  onClick={() => {
+                    track('buy_gemtard_clicked', {
+                      timestamp: new Date().toISOString(),
+                      source: 'character_modal'
+                    });
+                    window.open('https://magiceden.io/marketplace/gemtards', '_blank');
+                  }}
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-purple-400"
+                >
+                  🎨 Buy GEMtards on Magic Eden
+                </button>
+              </div>
+            </div>
             </div>
             
             {/* Scrollable Character Grid */}
