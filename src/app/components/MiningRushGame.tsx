@@ -11,6 +11,12 @@ interface GameObject {
   type: 'gem' | 'rock' | 'life';
 }
 
+interface Character {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
+
 interface GameState {
   score: number;
   lives: number;
@@ -39,6 +45,12 @@ const MiningRushGame: React.FC = () => {
   const [mobileControls, setMobileControls] = useState<{ left: boolean; right: boolean }>({ left: false, right: false }); // Controles móviles
   const [shareImageUrl, setShareImageUrl] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; show: boolean }>({ message: '', show: false });
+  const [selectedCharacter, setSelectedCharacter] = useState<Character>({ 
+    id: 'xisk', 
+    name: 'XISK', 
+    imageUrl: '/game/xisk.png' 
+  });
+  const [showCharacterSelection, setShowCharacterSelection] = useState(false);
   
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
@@ -54,6 +66,32 @@ const MiningRushGame: React.FC = () => {
     /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
     window.innerWidth < 768
   );
+
+  // Generate character list: XISK + 250 NFTs
+  const generateCharacterList = (): Character[] => {
+    const baseUrl = "https://gateway.pinit.io/cdn-cgi/image/format=auto/https://na-assets.pinit.io/HfqcAE9Za88tX3kpNYU3bNfST9cssNK7KBMgTEgnkXVd/a4f3b1e9-17de-4789-98c6-3007ce15db79/";
+    
+    const characters: Character[] = [
+      {
+        id: 'xisk',
+        name: 'XISK',
+        imageUrl: '/game/xisk.png'
+      }
+    ];
+
+    // Add 250 NFT characters (0-249)
+    for (let i = 0; i < 250; i++) {
+      characters.push({
+        id: `nft-${i}`,
+        name: `GEMtard #${i}`,
+        imageUrl: `${baseUrl}${i}`
+      });
+    }
+
+    return characters;
+  };
+
+  const characters = generateCharacterList();
 
   // Función para mostrar toast
   const showToast = (message: string) => {
@@ -109,59 +147,108 @@ const MiningRushGame: React.FC = () => {
       ctx.fill();
     }
 
-    // Cargar y dibujar la gema logo
-    try {
-      const img = new window.Image();
-      img.crossOrigin = 'anonymous';
-      
-      return new Promise<string>((resolve) => {
-        img.onload = () => {
-          // Dibujar gema grande en el centro-superior
-          const gemSize = 150;
-          ctx.drawImage(img, (canvas.width - gemSize) / 2, 80, gemSize, gemSize);
-
-          // Título del juego
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 48px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('GEMSTONE MINING RUSH', canvas.width / 2, 280);
-
-          // Puntaje épico
-          ctx.fillStyle = '#ffd700';
-          ctx.font = 'bold 72px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
-          ctx.strokeStyle = '#8b4513';
-          ctx.lineWidth = 4;
-          ctx.strokeText(gameState.score.toString(), canvas.width / 2, 380);
-          ctx.fillText(gameState.score.toString(), canvas.width / 2, 380);
-
-          // Texto "GEMS MINED"
-          ctx.fillStyle = '#a855f7';
-          ctx.font = 'bold 32px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
-          ctx.fillText('GEMS MINED', canvas.width / 2, 420);
-
-          // Footer épico
-          ctx.fillStyle = '#888888';
-          ctx.font = '24px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
-          ctx.fillText('Earn pasive USDC rewards by holding $GEM in your wallet!', canvas.width / 2, 500);
-          ctx.fillText('#GemstoneRewards #Solana', canvas.width / 2, 540);
-
-          // Convertir a blob y crear URL
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const url = URL.createObjectURL(blob);
-              setShareImageUrl(url);
-              resolve(url);
-            }
-          }, 'image/png');
+    // Función para cargar imagen con manejo de errores
+    const loadImage = (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => {
+          // Si falla cargar NFT, usar XISK como fallback
+          if (src !== '/game/xisk.png') {
+            loadImage('/game/xisk.png').then(resolve).catch(reject);
+          } else {
+            reject(new Error('Failed to load fallback image'));
+          }
         };
+        img.src = src;
+      });
+    };
+
+    try {
+      // Cargar imágenes en paralelo
+      const [gemImg, characterImg] = await Promise.all([
+        loadImage('/game/gem_logo.png'),
+        loadImage(selectedCharacter.imageUrl)
+      ]);
+
+      return new Promise<string>((resolve) => {
+        // Dibujar gema más pequeña en la parte superior
+        const gemSize = 100;
+        ctx.drawImage(gemImg, (canvas.width - gemSize) / 2, 60, gemSize, gemSize);
+
+        // Título del juego
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 36px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('GEMSTONE MINING RUSH', canvas.width / 2, 200);
+
+        // Puntaje épico
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 64px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.strokeStyle = '#8b4513';
+        ctx.lineWidth = 4;
+        ctx.strokeText(gameState.score.toString(), canvas.width / 2, 280);
+        ctx.fillText(gameState.score.toString(), canvas.width / 2, 280);
+
+        // Texto "GEMS MINED"
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 24px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.fillText('GEMS MINED', canvas.width / 2, 310);
+
+        // Character section
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 28px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.fillText(`I played with ${selectedCharacter.name}`, canvas.width / 2, 360);
+
+        // Dibujar character image con borde circular
+        const characterSize = 80;
+        const characterX = canvas.width / 2;
+        const characterY = 420;
         
-        img.src = '/game/gem_logo.png';
+        // Crear círculo de recorte para el personaje
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(characterX, characterY, characterSize / 2, 0, Math.PI * 2);
+        ctx.clip();
+        
+        // Dibujar imagen del personaje
+        ctx.drawImage(
+          characterImg, 
+          characterX - characterSize / 2, 
+          characterY - characterSize / 2, 
+          characterSize, 
+          characterSize
+        );
+        ctx.restore();
+
+        // Borde púrpura alrededor del personaje
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(characterX, characterY, characterSize / 2, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Footer épico
+        ctx.fillStyle = '#888888';
+        ctx.font = '20px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.fillText('Earn passive USDC rewards by holding $GEM in your wallet!', canvas.width / 2, 520);
+        ctx.fillText('#GemstoneRewards #Solana', canvas.width / 2, 550);
+
+        // Convertir a blob y crear URL
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            setShareImageUrl(url);
+            resolve(url);
+          }
+        }, 'image/png');
       });
     } catch (error) {
-      console.error('Error loading gem image:', error);
+      console.error('Error loading images:', error);
       return null;
     }
-  }, [gameState.score]);
+  }, [gameState.score, selectedCharacter]);
 
   // Generar imagen cuando termina el juego
   useEffect(() => {
@@ -219,7 +306,7 @@ Follow and support @GemstoneReward for updates! ✨
           }
         }
         
-        // Intentar copiar al clipboard (funciona bien en Android y desktop)
+        // Intentar copiar al clipboard y abrir X
         if (!isIOS && navigator.clipboard && window.ClipboardItem) {
           try {
             await navigator.clipboard.write([
@@ -228,19 +315,32 @@ Follow and support @GemstoneReward for updates! ✨
               })
             ]);
             
-            // Intentar abrir X según la plataforma
+            // Abrir X según la plataforma
             if (isAndroid) {
-              // En Android, intentar app primero
+              // En Android, usar intents y esquemas de URL específicos
+              const twitterIntentUrl = `intent://tweet?text=${encodeURIComponent(text)}#Intent;scheme=https;package=com.twitter.android;S.browser_fallback_url=https://twitter.com/intent/tweet?text=${encodeURIComponent(text)};end`;
               const twitterAppUrl = `twitter://post?message=${encodeURIComponent(text)}`;
               const twitterWebUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
               
-              window.location.href = twitterAppUrl;
-              
-              setTimeout(() => {
-                window.open(twitterWebUrl, '_blank');
-              }, 1000);
-              
-              showToast('🎉 Image copied! Open X and paste it (hold to paste)');
+              // Intentar múltiples métodos en Android
+              try {
+                // Método 1: Intent URL (más robusto en Android)
+                window.location.href = twitterIntentUrl;
+                showToast('🎉 Image copied! Opening X app to post...');
+              } catch (intentError) {
+                try {
+                  // Método 2: Twitter scheme URL
+                  window.location.href = twitterAppUrl;
+                  setTimeout(() => {
+                    window.open(twitterWebUrl, '_blank');
+                  }, 1500);
+                  showToast('🎉 Image copied! Opening X app...');
+                } catch (schemeError) {
+                  // Método 3: Fallback web
+                  window.open(twitterWebUrl, '_blank');
+                  showToast('🎉 Image copied! Paste it in X (hold to paste)');
+                }
+              }
             } else {
               // Desktop
               const twitterWebUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
@@ -258,20 +358,32 @@ Follow and support @GemstoneReward for updates! ✨
           // Abrir imagen en nueva pestaña para guardar
           window.open(shareImageUrl, '_blank');
           
-          // Intentar abrir la app de X
-          const twitterAppUrl = `twitter://post?message=${encodeURIComponent(text)}`;
-          window.location.href = twitterAppUrl;
-          
-          // Fallback a web
-          setTimeout(() => {
-            const twitterWebUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-            window.open(twitterWebUrl, '_blank');
-          }, 1500);
-          
-          if (isIOS) {
-            showToast('📱 Image opened! Save it, then paste in X app');
+          if (isAndroid) {
+            // Android: usar intent URL más robusto
+            const twitterIntentUrl = `intent://tweet?text=${encodeURIComponent(text)}#Intent;scheme=https;package=com.twitter.android;S.browser_fallback_url=https://twitter.com/intent/tweet?text=${encodeURIComponent(text)};end`;
+            
+            setTimeout(() => {
+              try {
+                window.location.href = twitterIntentUrl;
+              } catch (error) {
+                const twitterWebUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+                window.open(twitterWebUrl, '_blank');
+              }
+            }, 1000);
+            
+            showToast('📱 Image opened! Download it, then opening X app...');
           } else {
-            showToast('📱 Image opened! Download it, then attach in X app');
+            // iOS: usar esquema tradicional
+            const twitterAppUrl = `twitter://post?message=${encodeURIComponent(text)}`;
+            window.location.href = twitterAppUrl;
+            
+            // Fallback a web para iOS
+            setTimeout(() => {
+              const twitterWebUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+              window.open(twitterWebUrl, '_blank');
+            }, 1500);
+            
+            showToast('📱 Image opened! Save it, then paste in X app');
           }
         } else {
           // Desktop fallback
@@ -734,49 +846,128 @@ Follow and support @GemstoneReward for updates! ✨
   return (
     <div className="w-full flex flex-col bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 overflow-hidden fixed inset-0" style={{ height: '100dvh' }}>
       {/* Header */}
-      <div className="flex justify-between items-center p-2 sm:p-4 bg-black/20 flex-shrink-0">
-        {/* Left section */}
-        <div className="flex items-center gap-2 sm:gap-4 flex-1">
-          <Image src="/game/gem_logo.png" alt="Gem Logo" width={32} height={32} className="sm:w-10 sm:h-10" />
-          <h1 className="text-white text-sm sm:text-xl font-bold tracking-tight">Gemstone Mining Rush</h1>
-        </div>
-        
-        {/* Center section - Buy GEM Button */}
-        <div className="flex-shrink-0 cursor-pointer">
-          <button
-            onClick={() => {
-              track('buy_gem_clicked', {
-                timestamp: new Date().toISOString(),
-                source: 'header_button'
-              });
-              window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
-            }}
-            className="bg-gradient-to-r cursor-pointer from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
-          >
-            💎 Buy $GEM
-          </button>
-        </div>
-        
-        {/* Right section */}
-        <div className="flex items-center gap-2 sm:gap-4 justify-end flex-1">
-          <div className="text-white text-xs sm:text-sm font-medium">
-            Score: <span className="font-bold text-purple-300">{gameState.score}</span>
+      <div className="bg-black/20 flex-shrink-0">
+        {isMobile ? (
+          // Mobile: 2-row layout
+          <div className="p-2 space-y-2">
+            {/* First Row: Logo + Title + Buy Button */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2 flex-1">
+                <Image src="/game/gem_logo.png" alt="Gem Logo" width={28} height={28} />
+                <h1 className="text-white text-sm font-bold tracking-tight">Gemstone Mining Rush</h1>
+              </div>
+              <button
+                onClick={() => {
+                  track('buy_gem_clicked', {
+                    timestamp: new Date().toISOString(),
+                    source: 'header_button'
+                  });
+                  window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
+                }}
+                className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-2 py-1 rounded-lg font-bold text-xs transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
+              >
+                💎 Buy $GEM
+              </button>
+            </div>
+            
+            {/* Second Row: Score + Lives + Action Buttons */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="text-white text-xs font-medium">
+                  Score: <span className="font-bold text-purple-300">{gameState.score}</span>
+                </div>
+                <div className="text-white text-xs font-medium">
+                  Lives: <span className="font-bold text-red-300">{"❤️".repeat(Math.max(0, gameState.lives))}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    // Pause game if it's playing
+                    if (gameState.isPlaying && !gameState.isPaused) {
+                      setGameState(prev => ({ ...prev, isPaused: true }));
+                    }
+                    setShowCharacterSelection(true);
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded-lg transition-colors text-xs font-semibold"
+                  title="Change Character"
+                >
+                  Change Character
+                </button>
+                <button
+                  onClick={() => {
+                    track('how_to_play_opened', {
+                      timestamp: new Date().toISOString(),
+                    });
+                    setGameState(prev => ({ ...prev, showHowToPlay: true }));
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white w-7 h-7 rounded-full flex items-center justify-center transition-colors text-xs font-semibold"
+                >
+                  ?
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="text-white text-xs sm:text-sm font-medium">
-            Lives: <span className="font-bold text-red-300">{"❤️".repeat(Math.max(0, gameState.lives))}</span>
+        ) : (
+          // Desktop: single-row layout (unchanged)
+          <div className="flex justify-between items-center p-4">
+            {/* Left section */}
+            <div className="flex items-center gap-4 flex-1">
+              <Image src="/game/gem_logo.png" alt="Gem Logo" width={40} height={40} />
+              <h1 className="text-white text-xl font-bold tracking-tight">Gemstone Mining Rush</h1>
+            </div>
+            
+            {/* Center section - Buy GEM Button */}
+            <div className="flex-shrink-0 cursor-pointer">
+              <button
+                onClick={() => {
+                  track('buy_gem_clicked', {
+                    timestamp: new Date().toISOString(),
+                    source: 'header_button'
+                  });
+                  window.open('https://axiom.trade/meme/4HBf4XHbkTDA9rgDjvKAowQ1aK9hjvi9Fi3TviG2mPXe', '_blank');
+                }}
+                className="bg-gradient-to-r cursor-pointer from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 border border-yellow-400"
+              >
+                💎 Buy $GEM
+              </button>
+            </div>
+            
+            {/* Right section */}
+            <div className="flex items-center gap-4 justify-end flex-1">
+              <div className="text-white text-sm font-medium">
+                Score: <span className="font-bold text-purple-300">{gameState.score}</span>
+              </div>
+              <div className="text-white text-sm font-medium">
+                Lives: <span className="font-bold text-red-300">{"❤️".repeat(Math.max(0, gameState.lives))}</span>
+              </div>
+              <button
+                onClick={() => {
+                  // Pause game if it's playing
+                  if (gameState.isPlaying && !gameState.isPaused) {
+                    setGameState(prev => ({ ...prev, isPaused: true }));
+                  }
+                  setShowCharacterSelection(true);
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm font-semibold"
+                title="Change Character"
+              >
+                Change Character
+              </button>
+              <button
+                onClick={() => {
+                  track('how_to_play_opened', {
+                    timestamp: new Date().toISOString(),
+                  });
+                  setGameState(prev => ({ ...prev, showHowToPlay: true }));
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors text-sm font-semibold"
+              >
+                ?
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => {
-              track('how_to_play_opened', {
-                timestamp: new Date().toISOString(),
-              });
-              setGameState(prev => ({ ...prev, showHowToPlay: true }));
-            }}
-            className="bg-purple-600 hover:bg-purple-700 text-white w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-colors text-xs sm:text-sm font-semibold"
-          >
-            ?
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Game Area */}
@@ -840,8 +1031,8 @@ Follow and support @GemstoneReward for updates! ✨
           }}
         >
           <Image 
-            src="/game/xisk.png" 
-            alt="Miner" 
+            src={selectedCharacter.imageUrl} 
+            alt={selectedCharacter.name} 
             width={80} 
             height={80}
             className={`w-full h-full object-contain transition-transform duration-100 ease-out drop-shadow-md ${playerDirection === 'left' ? 'scale-x-[-1]' : ''}`}
@@ -972,6 +1163,7 @@ Follow and support @GemstoneReward for updates! ✨
             <h2 className="text-white text-xl sm:text-2xl mb-3 sm:mb-4 text-center">How to Play</h2>
             <div className="text-gray-300 space-y-2 sm:space-y-3 text-xs sm:text-sm">
               <p>🎮 <strong>Objective:</strong> Collect gems while avoiding rocks!</p>
+              <p>👤 <strong>Character:</strong> {isMobile ? 'Tap' : 'Click'} the "Change Character" button to choose from XISK or 250 unique GEMtard NFTs!</p>
               <p>⛏️ <strong>Controls:</strong></p>
               <ul className="ml-4 space-y-1">
                 {isMobile ? (
@@ -1009,30 +1201,136 @@ Follow and support @GemstoneReward for updates! ✨
         </div>
       )}
 
+      {/* Character Selection Modal */}
+      {showCharacterSelection && (
+        <div className="absolute inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className={`bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl max-w-4xl w-full border border-purple-500/50 shadow-2xl flex flex-col ${
+            isMobile ? 'h-[75vh] mt-auto mb-4' : 'max-h-[90vh]'
+          }`}>
+            {/* Fixed Header */}
+            <div className="p-4 sm:p-6 border-b border-gray-700/50 flex-shrink-0">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-white text-xl sm:text-2xl font-bold mb-1">Choose Your GEMtard</h2>
+                  <p className="text-gray-300 text-sm">Select from XISK or 250 unique NFT characters</p>
+                </div>
+                <button
+                  onClick={() => setShowCharacterSelection(false)}
+                  className="text-gray-400 hover:text-white text-2xl font-bold w-8 h-8 flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="bg-purple-600/20 border border-purple-400/50 rounded-lg p-3">
+                <div className="text-gray-200 text-sm">
+                  Currently selected: <span className="text-purple-200 font-bold text-base">{selectedCharacter.name}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Scrollable Character Grid */}
+            <div className={`overflow-y-auto flex-1 p-4 sm:p-6 ${isMobile ? 'min-h-0' : ''}`}>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+                {characters.map((character) => (
+                  <div
+                    key={character.id}
+                    onClick={() => {
+                      setSelectedCharacter(character);
+                      track('character_selected', {
+                        character_id: character.id,
+                        character_name: character.name,
+                        timestamp: new Date().toISOString(),
+                      });
+                    }}
+                    className={`relative cursor-pointer rounded-lg overflow-hidden border-3 transition-all duration-200 hover:scale-105 ${
+                      selectedCharacter.id === character.id
+                        ? 'border-purple-400 bg-purple-500/30 shadow-lg shadow-purple-500/50 ring-2 ring-purple-400'
+                        : 'border-gray-600 hover:border-purple-400 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="aspect-square bg-gray-700/50 relative">
+                      <Image
+                        src={character.imageUrl}
+                        alt={character.name}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to XISK image if NFT image fails to load
+                          const target = e.target as HTMLImageElement;
+                          if (target.src !== '/game/xisk.png') {
+                            target.src = '/game/xisk.png';
+                          }
+                        }}
+                      />
+                      
+                      {/* Selected overlay */}
+                      {selectedCharacter.id === character.id && (
+                        <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                          <div className="bg-purple-500 text-white text-lg rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg">
+                            ✓
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className={`absolute bottom-0 left-0 right-0 text-white text-xs p-1.5 text-center ${
+                      selectedCharacter.id === character.id ? 'bg-purple-600/90' : 'bg-black/80'
+                    }`}>
+                      <div className="truncate font-medium" title={character.name}>
+                        {character.name}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Fixed Footer */}
+            <div className="p-4 sm:p-6 border-t border-gray-700/50 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowCharacterSelection(false);
+                  showToast(`Selected ${selectedCharacter.name}! 🎮`);
+                }}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-4 rounded-lg transition-all duration-200 font-bold text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Select {selectedCharacter.name}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Game Over Modal */}
       {gameState.gameOver && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-4 sm:p-8 rounded-xl text-center max-w-lg w-full border border-purple-500/30 shadow-2xl max-h-[95vh] overflow-y-auto">
-            {/* Gem Logo */}
-            <div className="mb-3 sm:mb-6">
-              <Image 
-                src="/game/gem_logo.png" 
-                alt="Gem Logo" 
-                width={60} 
-                height={60}
-                className="mx-auto animate-pulse sm:w-20 sm:h-20"
-              />
-            </div>
+          <div className={`bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl border border-purple-500/30 shadow-2xl flex flex-col ${
+            isMobile ? 'w-full max-w-sm max-h-[90vh]' : 'w-full max-w-2xl max-h-[90vh]'
+          }`}>
             
-            {/* Epic Title */}
-            <h2 className="text-white text-2xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent tracking-tight">
-              GAME OVER!
-            </h2>
-            
-            {/* Score Display */}
-            <div className="mb-4 sm:mb-6">
-              <div className="text-gray-300 text-sm sm:text-lg mb-1 sm:mb-2 font-medium tracking-wide">Gems Mined</div>
-              <div className="text-yellow-400 text-3xl sm:text-5xl font-bold mb-1 sm:mb-2 drop-shadow-lg tracking-tight">
+            {/* Header */}
+            <div className="p-4 sm:p-6 text-center border-b border-gray-700/50 flex-shrink-0">
+              {/* Gem Logo */}
+              <div className="mb-3">
+                <Image 
+                  src="/game/gem_logo.png" 
+                  alt="Gem Logo" 
+                  width={50} 
+                  height={50}
+                  className="mx-auto animate-pulse sm:w-16 sm:h-16"
+                />
+              </div>
+              
+              {/* Epic Title */}
+              <h2 className="text-white text-xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent tracking-tight">
+                GAME OVER!
+              </h2>
+              
+              {/* Score Display */}
+              <div className="text-gray-300 text-sm mb-1 font-medium">Gems Mined</div>
+              <div className="text-yellow-400 text-2xl sm:text-4xl font-bold mb-1 drop-shadow-lg">
                 {gameState.score}
               </div>
               <div className="text-purple-300 text-xs sm:text-sm font-medium">
@@ -1044,61 +1342,89 @@ Follow and support @GemstoneReward for updates! ✨
               </div>
             </div>
 
-            {/* Generated Image Preview */}
+            {/* Image Preview Section */}
             {shareImageUrl && (
-              <div className="mb-4 sm:mb-6">
-                <div className="text-gray-300 text-xs sm:text-sm mb-2 sm:mb-3">Your epic score card:</div>
-                <div className="relative mx-auto w-32 h-24 sm:w-48 sm:h-36 rounded-lg overflow-hidden border border-purple-500/50">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
+                <div className="text-gray-300 text-sm mb-3 text-center">Your epic score card:</div>
+                <div className={`relative mx-auto rounded-lg overflow-hidden border-2 border-purple-500/50 shadow-lg ${
+                  isMobile ? 'w-full aspect-[4/3]' : 'w-full max-w-md aspect-[4/3]'
+                }`}>
                   <img 
                     src={shareImageUrl} 
                     alt="Score Card" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain bg-gray-900"
                   />
                 </div>
+                <div className="text-center text-gray-400 text-xs mt-2">
+                  Featuring your character: <span className="text-purple-300 font-semibold">{selectedCharacter.name}</span>
+                </div>
               </div>
             )}
-            
-            {/* Action Buttons */}
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex gap-2 sm:gap-3">
-                <button
-                  onClick={startGame}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 sm:py-3 px-2 sm:px-4 rounded-lg transition-colors font-semibold text-sm"
-                >
-                  🎮 Play Again
-                </button>
-                <button
-                  onClick={shareScoreImage}
-                  disabled={!shareImageUrl}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 sm:py-3 px-2 sm:px-4 rounded-lg transition-colors font-semibold text-sm"
-                >
-                  🚀 Post to X
-                </button>
-              </div>
-              
-              {shareImageUrl && (
-                <div className="flex gap-1 sm:gap-2">
-                  <button
-                    onClick={copyImageToClipboard}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm"
-                  >
-                    📋 Copy Image
-                  </button>
-                  <button
-                    onClick={downloadScoreImage}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm"
-                  >
-                    💾 Download
-                  </button>
-                </div>
-              )}
-            </div>
             
             {!shareImageUrl && (
-              <div className="text-gray-400 text-xs mt-2 sm:mt-3">
-                Generating epic image... ✨
+              <div className="flex-1 flex items-center justify-center p-6 min-h-48">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                  <div className="text-gray-400 text-sm">
+                    Generating your epic score card... ✨
+                  </div>
+                </div>
               </div>
             )}
+            
+            {/* Action Buttons Footer */}
+            <div className="p-4 sm:p-6 border-t border-gray-700/50 flex-shrink-0">
+              <div className="space-y-3">
+                {/* Share Instructions */}
+                {shareImageUrl && (
+                  <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-3 text-center">
+                    <div className="text-blue-200 text-xs sm:text-sm font-medium mb-1">
+                      💎 Share with Gemstone Community!
+                    </div>
+                    <div className="text-gray-300 text-xs leading-relaxed">
+                      {isMobile ? (
+                        <>1. Tap "📋 Copy Image" → 2. Tap "🚀 Post to X" → 3. Paste your score card and tag the community!</>
+                      ) : (
+                        <>1. Copy your score card → 2. Click "🚀 Post to X" → 3. Paste (Ctrl+V) and share your achievement!</>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={startGame}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg transition-colors font-semibold text-sm"
+                  >
+                    🎮 Play Again
+                  </button>
+                  <button
+                    onClick={shareScoreImage}
+                    disabled={!shareImageUrl}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg transition-colors font-semibold text-sm"
+                  >
+                    🚀 Post to X
+                  </button>
+                </div>
+                
+                {shareImageUrl && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={copyImageToClipboard}
+                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 px-3 rounded-lg transition-colors text-xs sm:text-sm"
+                    >
+                      📋 Copy Image
+                    </button>
+                    <button
+                      onClick={downloadScoreImage}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg transition-colors text-xs sm:text-sm"
+                    >
+                      💾 Download
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
